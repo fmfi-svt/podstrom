@@ -57,7 +57,7 @@ class Runner(object):
         body = self.checker.stdout.read(int(size) + 1)[:-1]
         header, message = body.split('\n\n', 1)
 
-        self.log("loading " + message.partition('\n')[0])
+        # self.log("loading " + message.partition('\n')[0])
         newheader = []
         for line in header.split('\n'):
             if line.startswith('tree '):
