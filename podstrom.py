@@ -11,9 +11,10 @@ class Runner(object):
         self.logstream = logstream
         self.subpath = subpath
         self.cache = self.make_cache()
-        self.checker = self.run_batch_checker()
         self.empty_tree = SP.check_output(
             ['git', 'hash-object', '-w', '-t', 'tree', '/dev/null']).strip()
+        self.checker = SP.Popen(['git', 'cat-file', '--batch'],
+                                stdin=SP.PIPE, stdout=SP.PIPE)
 
     def log(self, message):
         if self.logstream:
@@ -34,10 +35,6 @@ class Runner(object):
         self.log("found {} subtree commits".format(len(cache)))
         return cache
 
-    def run_batch_checker(self):
-        return SP.Popen(['git', 'cat-file', '--batch-check'],
-                        stdin=SP.PIPE, stdout=SP.PIPE)
-
     def close(self):
         self.checker.stdin.close()
 
@@ -46,6 +43,7 @@ class Runner(object):
         result = self.checker.stdout.readline()
         if result.endswith('missing\n'): return self.empty_tree
         hash, type, size = result.split()
+        self.checker.stdout.read(int(size) + 1)
         if type != 'tree': return self.empty_tree
         return hash
 
