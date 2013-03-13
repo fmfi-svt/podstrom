@@ -5,37 +5,35 @@ import subprocess as SP
 magic_marker = 'podstrom-original-id: '
 
 
-def make_cache():
-    print "getting log..."
-    log = SP.check_output(['git', 'log', '--all', '--format=raw'])
-    print "parsing log..."
-    current = None
-    cache = {}
-    for line in log.split('\n'):
-        if line.startswith('commit '):
-            current = line[7:]
-        if line.startswith('    '+magic_marker) and current:
-            original = line[len('    '+magic_marker):]
-            cache[original] = current
-    print "found {} subtree commits".format(len(cache))
-    return cache
-
-
-def run_batch_checker():
-    return SP.Popen(['git', 'cat-file', '--batch-check'],
-                    stdin=SP.PIPE, stdout=SP.PIPE)
-
-
 class Runner(object):
 
     def __init__(self, subpath):
-        self.cache = make_cache()
-        self.checker = run_batch_checker()
+        self.cache = self.make_cache()
+        self.checker = self.run_batch_checker()
         self.subpath = subpath
         self.empty_tree = SP.check_output(
             ['git', 'hash-object', '-w', '-t', 'tree', '/dev/null']).strip()
 
-    def close():
+    def make_cache(self):
+        print "getting log..."
+        log = SP.check_output(['git', 'log', '--all', '--format=raw'])
+        print "parsing log..."
+        current = None
+        cache = {}
+        for line in log.split('\n'):
+            if line.startswith('commit '):
+                current = line[7:]
+            if line.startswith('    '+magic_marker) and current:
+                original = line[len('    '+magic_marker):]
+                cache[original] = current
+        print "found {} subtree commits".format(len(cache))
+        return cache
+
+    def run_batch_checker(self):
+        return SP.Popen(['git', 'cat-file', '--batch-check'],
+                        stdin=SP.PIPE, stdout=SP.PIPE)
+
+    def close(self):
         self.checker.stdin.close()
 
     def transform_tree(self, orighash):
