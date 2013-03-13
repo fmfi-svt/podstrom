@@ -2,14 +2,13 @@
 
 import subprocess as SP
 
-magic_marker = 'podstrom-original-id: '
-
 
 class Runner(object):
 
     def __init__(self, subpath, logstream=None):
         self.logstream = logstream
-        self.subpath = subpath
+        self.subpath = subpath.strip('/')
+        self.commit_marker = 'podstrom-original-id: ' + self.subpath + ' '
         self.cache = self.make_cache()
         self.empty_tree = SP.check_output(
             ['git', 'hash-object', '-w', '-t', 'tree', '/dev/null']).strip()
@@ -29,8 +28,8 @@ class Runner(object):
         for line in log.split('\n'):
             if line.startswith('commit '):
                 current = line[7:]
-            if line.startswith('    '+magic_marker) and current:
-                original = line[len('    '+magic_marker):]
+            if line[:-40] == '    ' + self.commit_marker and current:
+                original = line[-40:]
                 cache[original] = current
         self.log("found {} subtree commits".format(len(cache)))
         return cache
@@ -72,7 +71,7 @@ class Runner(object):
                 newheader.append(line)
 
         newcontent = ('\n'.join(newheader) + '\n\n' + message +
-                      '\n' + magic_marker + orighash + '\n')
+                      '\n' + self.commit_marker + orighash + '\n')
 
         self.log("saving " + message.partition('\n')[0])
         hash_object = SP.Popen(
