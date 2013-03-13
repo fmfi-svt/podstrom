@@ -107,3 +107,4 @@ if __name__ == '__main__':
     else:
         for rev in results:
             print rev
+    runner.close()
