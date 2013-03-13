@@ -49,7 +49,13 @@ class Runner(object):
 
     def transform_commit(self, orighash):
         if orighash in self.cache: return self.cache[orighash]
-        body = SP.check_output(['git', 'cat-file', 'commit', orighash])
+
+        # "^{}": vid fetchrev - git je hlupy a missing hashe bez ^{} ho zhodia
+        self.checker.stdin.write(orighash + '^{}\n')
+        result = self.checker.stdout.readline()
+        if result.endswith('missing\n'): raise KeyError(result.strip())
+        hash, type, size = result.split()
+        body = self.checker.stdout.read(int(size) + 1)[:-1]
         header, message = body.split('\n\n', 1)
 
         self.log("loading " + message.partition('\n')[0])
