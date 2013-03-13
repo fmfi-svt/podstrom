@@ -7,17 +7,22 @@ magic_marker = 'podstrom-original-id: '
 
 class Runner(object):
 
-    def __init__(self, subpath):
+    def __init__(self, subpath, logstream=None):
+        self.logstream = logstream
+        self.subpath = subpath
         self.cache = self.make_cache()
         self.checker = self.run_batch_checker()
-        self.subpath = subpath
         self.empty_tree = SP.check_output(
             ['git', 'hash-object', '-w', '-t', 'tree', '/dev/null']).strip()
 
+    def log(self, message):
+        if self.logstream:
+            print >>self.logstream, message
+
     def make_cache(self):
-        print "getting log..."
+        self.log("getting log...")
         log = SP.check_output(['git', 'log', '--all', '--format=raw'])
-        print "parsing log..."
+        self.log("parsing log...")
         current = None
         cache = {}
         for line in log.split('\n'):
@@ -26,7 +31,7 @@ class Runner(object):
             if line.startswith('    '+magic_marker) and current:
                 original = line[len('    '+magic_marker):]
                 cache[original] = current
-        print "found {} subtree commits".format(len(cache))
+        self.log("found {} subtree commits".format(len(cache)))
         return cache
 
     def run_batch_checker(self):
@@ -49,7 +54,7 @@ class Runner(object):
         body = SP.check_output(['git', 'cat-file', 'commit', orighash])
         header, message = body.split('\n\n', 1)
 
-        print "loading", message.partition('\n')[0]
+        self.log("loading " + message.partition('\n')[0])
         newheader = []
         for line in header.split('\n'):
             if line.startswith('tree '):
@@ -65,7 +70,7 @@ class Runner(object):
         newcontent = ('\n'.join(newheader) + '\n\n' + message +
                       '\n' + magic_marker + orighash + '\n')
 
-        print "saving", message.partition('\n')[0]
+        self.log("saving " + message.partition('\n')[0])
         hash_object = SP.Popen(
             ['git', 'hash-object', '-t', 'commit', '-w', '--stdin'],
             stdin=SP.PIPE, stdout=SP.PIPE)
@@ -91,7 +96,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     if args.update and len(args.revs) > 1:
         parser.error('only one input commit may be given when updating')
-    runner = Runner(args.path)
+    runner = Runner(args.path, logstream=sys.stderr)
     results = []
     for rev in args.revs:
         rev = SP.check_output(['git', 'rev-parse', rev]).strip()
