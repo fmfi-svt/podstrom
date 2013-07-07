@@ -90,10 +90,10 @@ if __name__ == '__main__':
     import sys
     import argparse
     parser = argparse.ArgumentParser(description='Create a Git subtree.')
+    parser.add_argument('path',
+                        help='the directory path to extract')
     parser.add_argument('revs', metavar='rev', nargs='+',
                         help='the commits to get a subtree for')
-    parser.add_argument('-p', '--path', required=True,
-                        help='the directory path to extract')
     parser.add_argument('-u', '--update', metavar='ref',
                         help='put the result in this branch')
     args = parser.parse_args()
